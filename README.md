@@ -1,2 +1,2 @@
 # Moderation
-Phantom Moderation bot
+
