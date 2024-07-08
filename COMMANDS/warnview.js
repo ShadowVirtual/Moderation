@@ -2,9 +2,9 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const config = require('../config.json');
 
 const warningsFilePath = path.resolve(__dirname, '../warnings.json');
+const configPath = path.resolve(__dirname, '../config.json');
 
 const getProgressBar = (current, max) => {
   const progress = Math.min(current / max, 1);
@@ -25,15 +25,14 @@ module.exports = {
         .setRequired(true)),
   async execute(interaction) {
     const user = interaction.options.getUser('user');
+
+    // Read the config file dynamically
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     const warningLimit = config.WARNING_LIMIT;
 
     const warnings = JSON.parse(fs.readFileSync(warningsFilePath, 'utf8'));
 
-    if (!warnings[user.id] || warnings[user.id].length === 0) {
-      return interaction.reply({ content: `${user.tag} has no warnings.`, ephemeral: true });
-    }
-
-    const warningCount = warnings[user.id].length;
+    const warningCount = warnings[user.id] ? warnings[user.id].length : 0;
     const progressBar = getProgressBar(warningCount, warningLimit);
 
     const embed = new EmbedBuilder()
@@ -43,12 +42,16 @@ module.exports = {
       .setFooter({ text: `Total Warnings: ${warningCount}` })
       .addFields({ name: 'Warning Progress', value: `${progressBar} (${warningCount}/${warningLimit})`, inline: false });
 
-    warnings[user.id].forEach((warning, index) => {
-      embed.addFields(
-        { name: `Warning #${index + 1}`, value: `**Reason:** ${warning.reason}\n**Date:** ${new Date(warning.date).toLocaleString()}`, inline: false }
-      );
-    });
+    if (warningCount === 0) {
+      embed.addFields({ name: 'No Warnings', value: '❌', inline: false });
+    } else {
+      warnings[user.id].forEach((warning, index) => {
+        embed.addFields(
+          { name: `Warning #${index + 1}`, value: `**Reason:** ${warning.reason}\n**Date:** ${new Date(warning.date).toLocaleString()}`, inline: false }
+        );
+      });
+    }
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed], ephemeral: true });
   }
 };
