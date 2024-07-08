@@ -35,9 +35,11 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setTitle('Warning Removed')
       .setColor('#00ff00')
-      .addField('User', `${user.tag} (${user.id})`, true)
-      .addField('Removed Warning #', `${warningNumber}`, true)
-      .setFooter(`Removed by ${interaction.user.tag}`);
+      .addFields(
+        { name: 'User', value: `${user.tag} (${user.id})`, inline: true },
+        { name: 'Removed Warning #', value: `${warningNumber}`, inline: true }
+      )
+      .setFooter({ text: `Removed by ${interaction.user.tag}` });
 
     await interaction.reply({ embeds: [embed] });
 
