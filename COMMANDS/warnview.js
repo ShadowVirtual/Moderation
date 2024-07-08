@@ -2,15 +2,16 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const config = require('../config.json');
 
 const warningsFilePath = path.resolve(__dirname, '../warnings.json');
 
-const getProgressBar = (current, max = 10) => {
+const getProgressBar = (current, max) => {
   const progress = Math.min(current / max, 1);
   const totalBlocks = 10;
   const filledBlocks = Math.round(progress * totalBlocks);
   const emptyBlocks = totalBlocks - filledBlocks;
-  
+
   return '█'.repeat(filledBlocks) + '░'.repeat(emptyBlocks);
 };
 
@@ -24,6 +25,7 @@ module.exports = {
         .setRequired(true)),
   async execute(interaction) {
     const user = interaction.options.getUser('user');
+    const warningLimit = config.WARNING_LIMIT;
 
     const warnings = JSON.parse(fs.readFileSync(warningsFilePath, 'utf8'));
 
@@ -32,14 +34,14 @@ module.exports = {
     }
 
     const warningCount = warnings[user.id].length;
-    const progressBar = getProgressBar(warningCount);
+    const progressBar = getProgressBar(warningCount, warningLimit);
 
     const embed = new EmbedBuilder()
       .setTitle(`Warnings for ${user.tag}`)
       .setColor('#ff0000')
       .setThumbnail(user.displayAvatarURL({ dynamic: true }))
       .setFooter({ text: `Total Warnings: ${warningCount}` })
-      .addFields({ name: 'Warning Progress', value: `${progressBar} (${warningCount}/10)`, inline: false });
+      .addFields({ name: 'Warning Progress', value: `${progressBar} (${warningCount}/${warningLimit})`, inline: false });
 
     warnings[user.id].forEach((warning, index) => {
       embed.addFields(
